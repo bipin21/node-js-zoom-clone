@@ -13,10 +13,10 @@ var peer = new Peer(undefined, {
 let myVideoStream;
 navigator.mediaDevices.getUserMedia({
     video: true,
-    audio: false
+    audio: true
 }).then(stream => {
     myVideoStream = stream;
-    addVideoStream(myVideo,stream);
+    addVideoStream(myVideo, stream);
 
     peer.on('call', call => {
         call.answer(stream);
@@ -29,20 +29,35 @@ navigator.mediaDevices.getUserMedia({
     socket.on('user-connected', (userId) => {
         connectToNewUser(userId, stream);
     });
+
+    // input value
+    let text = $("input");
+    // when press enter send message
+    $('html').keydown(function (e) {
+        if (e.which == 13 && text.val().length !== 0) {
+            socket.emit('message', text.val());
+            text.val('')
+        }
+    });
+    socket.on("createMessage", message => {
+        console.log(message);
+        $("ul").append(`<li class="message"><b>user</b><br/>${message}</li>`);
+        scrollToBottom()
+    })
 });
 
 peer.on('open', id => {
-socket.emit('join-room', ROOM_ID, id);
+    socket.emit('join-room', ROOM_ID, id);
 });
 
 
 
 const connectToNewUser = (userId, stream) => {
-   const call = peer.call(userId, stream);
-   const video = document.createElement('video');
-   call.on('stream',userVideoStrem => {
-       addVideoStream(video, userVideoStrem);
-   });
+    const call = peer.call(userId, stream);
+    const video = document.createElement('video');
+    call.on('stream', userVideoStrem => {
+        addVideoStream(video, userVideoStrem);
+    });
 }
 
 const addVideoStream = (video, stream) => {
@@ -51,4 +66,66 @@ const addVideoStream = (video, stream) => {
         video.play();
     });
     videoGrid.append(video);
+}
+
+const scrollToBottom = () => {
+    var d = $('.main__chat_window');
+    d.scrollTop(d.prop("scrollHeight"));
+}
+
+// MUTE UNMUTE
+const muteUnmute = () => {
+    const enabled = myVideoStream.getAudioTracks()[0].enabled;
+    if (enabled) {
+        myVideoStream.getAudioTracks()[0].enabled = false;
+        setUnmuteButton();
+    }
+    else {
+        setmuteButton();
+        myVideoStream.getAudioTracks()[0].enabled = true;
+    }
+}
+
+const setUnmuteButton = () => {
+    const html = `
+    <i class= "unmute fas fa-microphone-slash"></i>
+    <span>Unmute</span>
+    `;
+    document.querySelector('.main__mute_button').innerHTML = html;
+}
+
+const setmuteButton = () => {
+    const html = `
+    <i class= "fas fa-microphone"></i>
+    <span>Mute</span>
+    `;
+    document.querySelector('.main__mute_button').innerHTML = html;
+}
+
+
+const playStop = () => {
+    let enabled = myVideoStream.getVideoTracks()[0].enabled;
+    if (enabled) {
+        myVideoStream.getVideoTracks()[0].enabled = false;
+        setPlayVideo()
+    } else {
+        setStopVideo()
+        myVideoStream.getVideoTracks()[0].enabled = true;
+    }
+}
+
+const setStopVideo = () => {
+    const html = `
+      <i class="fas fa-video"></i>
+      <span>Stop Video</span>
+    `
+    document.querySelector('.main__video_button').innerHTML = html;
+}
+
+const setPlayVideo = () => {
+    const html = `
+    <i class="stop fas fa-video-slash"></i>
+      <span>Play Video</span>
+    `
+    document.querySelector('.main__video_button').innerHTML = html;
 }
