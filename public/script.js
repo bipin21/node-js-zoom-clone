@@ -8,8 +8,6 @@ var peer = new Peer(undefined, {
     port: '443'
 });
 
-
-
 let myVideoStream;
 navigator.mediaDevices.getUserMedia({
     video: true,
